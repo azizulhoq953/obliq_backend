@@ -26,17 +26,33 @@ exports.databaseEntities = [
 ];
 const createDatabaseOptions = (env) => {
     const schema = env.DATABASE_SCHEMA?.trim();
+    const dbUrl = env.DATABASE_URL;
     return {
         type: 'postgres',
-        host: env.DATABASE_HOST || 'localhost',
-        port: parsePort(env.DATABASE_PORT),
-        username: env.DATABASE_USER || 'postgres',
-        password: env.DATABASE_PASSWORD || 'postgres',
-        database: env.DATABASE_NAME || 'obliq',
+        ...(dbUrl
+            ? { url: dbUrl }
+            : {
+                host: env.DATABASE_HOST || 'localhost',
+                port: parsePort(env.DATABASE_PORT),
+                username: env.DATABASE_USER || 'postgres',
+                password: env.DATABASE_PASSWORD || 'postgres',
+                database: env.DATABASE_NAME || 'obliq',
+            }),
         entities: exports.databaseEntities,
         migrations: [`${__dirname}/migrations/*{.ts,.js}`],
         synchronize: parseBoolean(env.DATABASE_SYNCHRONIZE, false),
         migrationsRun: parseBoolean(env.DATABASE_MIGRATIONS_RUN, false),
+        ssl: dbUrl ? { rejectUnauthorized: false } : false,
+        extra: {
+            ...(dbUrl ? {
+                ssl: {
+                    rejectUnauthorized: false,
+                }
+            } : {}),
+            connectionTimeoutMillis: 10000,
+            idleTimeoutMillis: 30000,
+            max: 20,
+        },
         ...(schema ? { schema } : {}),
     };
 };

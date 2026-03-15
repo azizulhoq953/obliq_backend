@@ -5,7 +5,7 @@ import { Role } from './entities/role.entity';
 import { UserPermission } from './entities/user-permission.entity';
 import { User } from './entities/user.entity';
 
-const DEFAULT_DATABASE_PORT = 5432;
+const DEFAULT_DATABASE_PORT = 6543;
 
 const parsePort = (value: string | undefined): number => {
   const port = Number(value);
@@ -36,18 +36,36 @@ export const createDatabaseOptions = (
   env: NodeJS.ProcessEnv,
 ): DataSourceOptions => {
   const schema = env.DATABASE_SCHEMA?.trim();
+  const dbUrl = env.DATABASE_URL;
 
   return {
     type: 'postgres',
-    host: env.DATABASE_HOST || 'localhost',
-    port: parsePort(env.DATABASE_PORT),
-    username: env.DATABASE_USER || 'postgres',
-    password: env.DATABASE_PASSWORD || 'postgres',
-    database: env.DATABASE_NAME || 'obliq',
+    ...(dbUrl 
+      ? { url: dbUrl } 
+      : {
+          host: env.DATABASE_HOST || 'localhost',
+          port: parsePort(env.DATABASE_PORT),
+          username: env.DATABASE_USER || 'postgres',
+          password: env.DATABASE_PASSWORD || 'postgres',
+          database: env.DATABASE_NAME || 'obliq',
+        }
+    ),
     entities: databaseEntities,
     migrations: [`${__dirname}/migrations/*{.ts,.js}`],
     synchronize: parseBoolean(env.DATABASE_SYNCHRONIZE, false),
     migrationsRun: parseBoolean(env.DATABASE_MIGRATIONS_RUN, false),
+    
+    ssl: dbUrl ? { rejectUnauthorized: false } : false,
+    extra: {
+      ...(dbUrl ? {
+        ssl: {
+          rejectUnauthorized: false,
+        }
+      } : {}),
+      connectionTimeoutMillis: 10000,
+      idleTimeoutMillis: 30000,
+      max: 20,
+    },
     ...(schema ? { schema } : {}),
   };
 };

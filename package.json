@@ -12,6 +12,7 @@
     "migration:generate": "typeorm migration:generate -d src/database/data-source.ts"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.0.2",
     "@nestjs/common": "^10.0.0",
     "@nestjs/config": "^4.0.3",
     "@nestjs/core": "^10.0.0",
